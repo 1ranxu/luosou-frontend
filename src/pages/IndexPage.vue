@@ -10,13 +10,13 @@
     <MyDivider />
     <a-tabs v-model:activeKey="activeKey" @change="onTabChange">
       <a-tab-pane key="post" tab="文章">
-        <PostListPage />
+        <PostListPage :postlist="postList" />
       </a-tab-pane>
       <a-tab-pane key="picture" tab="图片">
         <PictureListPage />
       </a-tab-pane>
       <a-tab-pane key="user" tab="用户">
-        <UsertListPage />
+        <UsertListPage :userlist="userList" />
       </a-tab-pane>
     </a-tabs>
   </div>
@@ -31,6 +31,14 @@ import MyDivider from "@/pages/MyDivider.vue";
 import { useRoute, useRouter } from "vue-router";
 import myAxios from "@/plugins/myAxios";
 
+myAxios.post("/post/list/page/vo", {}).then((res: any) => {
+  postList.value = res.records;
+});
+
+myAxios.post("/user/list/page/vo", {}).then((res: any) => {
+  userList.value = res.records;
+});
+
 const router = useRouter();
 
 const route = useRoute();
@@ -41,6 +49,9 @@ const initSearchParams = {
   pageNum: 1,
 };
 const searchParams = ref(initSearchParams);
+
+const postList = ref([]);
+const userList = ref([]);
 
 watchEffect(() => {
   searchParams.value = {
@@ -62,6 +73,4 @@ const onTabChange = (key: string) => {
   });
 };
 const activeKey = ref(route.params.category);
-
-
 </script>
