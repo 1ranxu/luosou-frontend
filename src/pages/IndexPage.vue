@@ -23,51 +23,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from "vue";
+import { onMounted, ref, watchEffect } from "vue";
 import PostListPage from "@/pages/PostListPage.vue";
 import PictureListPage from "@/pages/PictureListPage.vue";
 import UsertListPage from "@/pages/UsertListPage.vue";
 import MyDivider from "@/pages/MyDivider.vue";
 import { useRoute, useRouter } from "vue-router";
 import myAxios from "@/plugins/myAxios";
+import { message } from "ant-design-vue";
 
 const postList = ref([]);
 const userList = ref([]);
 const pictureList = ref([]);
+const router = useRouter();
+const route = useRoute();
+const activeKey = ref(route.params.category);
 const initSearchParams = {
+  type: activeKey.value,
   text: "",
   pageSize: 10,
   pageNum: 1,
 };
-const router = useRouter();
-const route = useRoute();
-
 const searchParams = ref(initSearchParams);
-
-/*const loadDataV1 = (params: any) => {
-  const postQuery = {
-    ...params,
-    searchText: searchParams.value.text,
-  };
-  myAxios.post("/post/list/page/vo", postQuery).then((res: any) => {
-    postList.value = res.records;
-  });
-  const userQuery = {
-    ...params,
-    userName: searchParams.value.text,
-  };
-  myAxios.post("/user/list/page/vo", userQuery).then((res: any) => {
-    userList.value = res.records;
-  });
-  const pictureQuery = {
-    ...params,
-    searchText: searchParams.value.text,
-  };
-  myAxios.post("/picture/list/page/vo", pictureQuery).then((res: any) => {
-    pictureList.value = res.records;
-  });
-};*/
-const loadData = (params: any) => {
+//加载聚合数据
+const loadAllData = (params: any) => {
   const query = {
     ...params,
     searchText: searchParams.value.text,
@@ -78,16 +57,42 @@ const loadData = (params: any) => {
     pictureList.value = res.pictureList;
   });
 };
-loadData(initSearchParams);
-
+//加载单类数据
+const loadData = (params: any) => {
+  const { type } = searchParams.value;
+  if (!type) {
+    message.error("类别为空");
+    return;
+  }
+  const query = {
+    ...params,
+    type: type,
+    searchText: searchParams.value.text,
+  };
+  myAxios.post("/search/all", query).then((res: any) => {
+    if (type === "post") {
+      postList.value = res.dataList;
+    }
+    if (type === "user") {
+      userList.value = res.dataList;
+    }
+    if (type === "picture") {
+      pictureList.value = res.dataList;
+    }
+  });
+};
+onMounted(() => {
+  loadData(searchParams.value);
+});
 watchEffect(() => {
   searchParams.value = {
     ...initSearchParams,
     text: route.query.text as string,
+    type: route.query.type as string,
   } as any;
 });
 
-const onSearch = (value: string) => {
+const onSearch = () => {
   router.push({
     query: searchParams.value,
   });
@@ -95,10 +100,12 @@ const onSearch = (value: string) => {
 };
 
 const onTabChange = (key: string) => {
+  searchParams.value.type = key;
   router.push({
     path: `/${key}`,
     query: searchParams.value,
   });
+
+  loadData(searchParams.value);
 };
-const activeKey = ref(route.params.category);
 </script>
